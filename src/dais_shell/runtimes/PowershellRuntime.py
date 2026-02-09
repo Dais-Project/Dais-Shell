@@ -42,8 +42,9 @@ exit $LASTEXITCODE"""
 # --- --- --- --- --- ---
 
 class PowerShellRuntime(BaseShellRuntime):
-    def __init__(self):
+    def __init__(self, max_lines: int):
         self._shell = self._detect_shell()
+        self._max_lines = max_lines
 
     @staticmethod
     def _detect_shell() -> str:
@@ -91,7 +92,7 @@ class PowerShellRuntime(BaseShellRuntime):
             creationflags=CREATE_NO_WINDOW
         )
 
-        reader = IOStreamReaderSync(proc, on_stdout, on_stderr)
+        reader = IOStreamReaderSync(proc, on_stdout, on_stderr, self._max_lines)
         return reader.read(step.timeout)
 
     async def run(
@@ -109,5 +110,5 @@ class PowerShellRuntime(BaseShellRuntime):
             creationflags=CREATE_NO_WINDOW
         )
 
-        reader = IOStreamReader(proc, on_stdout, on_stderr)
+        reader = IOStreamReader(proc, self._max_lines, on_stdout, on_stderr)
         return await reader.read(step.timeout)

@@ -88,9 +88,10 @@ class IOStreamReaderSync:
 class IOStreamReader:
     def __init__(self,
                  proc: asyncio.subprocess.Process,
+                 max_lines: int,
                  on_stdout: IOStreamCallback | None = None,
                  on_stderr: IOStreamCallback | None = None,
-                 max_lines: int = 10000):
+                 ):
         self._proc = proc
         self._max_lines = max_lines
         self._on_stdout = on_stdout

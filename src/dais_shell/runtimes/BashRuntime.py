@@ -25,8 +25,9 @@ class BashCommandStep(CommandStep):
 # --- --- --- --- --- ---
 
 class BashRuntime(BaseShellRuntime):
-    def __init__(self):
+    def __init__(self, max_lines: int):
         self._shell = self._detect_shell()
+        self._max_lines = max_lines
 
     def _detect_shell(self) -> str:
         if bash := shutil.which("bash"):
@@ -69,16 +70,15 @@ class BashRuntime(BaseShellRuntime):
             bufsize=1,
         )
 
-        reader = IOStreamReaderSync(proc, on_stdout, on_stderr)
+        reader = IOStreamReaderSync(proc, on_stdout, on_stderr, self._max_lines)
         return reader.read(step.timeout)
 
-    # ---------- async execution ----------
     async def run(self,
                         step: CommandStep,
                         on_stdout=None,
                         on_stderr=None
                         ) -> IOStreamReaderResult:
-        p = await asyncio.create_subprocess_exec(
+        proc = await asyncio.create_subprocess_exec(
             *self._prepare_cmd(step),
             cwd=step.cwd,
             env=step.env,
@@ -86,5 +86,5 @@ class BashRuntime(BaseShellRuntime):
             stderr=asyncio.subprocess.PIPE,
         )
 
-        reader = IOStreamReader(p, on_stdout, on_stderr)
+        reader = IOStreamReader(proc, self._max_lines, on_stdout, on_stderr)
         return await reader.read(step.timeout)
