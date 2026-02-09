@@ -32,10 +32,10 @@ $ErrorActionPreference = "Stop"
 $PSNativeCommandArgumentPassing = "Standard"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
-$cmd  = ConvertFrom-Json '{cmd_json}'
-$args = ConvertFrom-Json '{args_json}'
+$command  = ConvertFrom-Json '{cmd_json}'
+$arguments = ,(ConvertFrom-Json '{args_json}')
 
-& $cmd @args
+& $command @arguments
 exit $LASTEXITCODE"""
         return script.strip()
 
