@@ -14,6 +14,3 @@ class ForbiddenShellTargetError(ShellError):
     def __init__(self, command: str):
         self.command = command
         super().__init__(f"Refusing to execute shell program as target: {command}")
-
-class ExecutionTimeoutError(ShellError): ...
-

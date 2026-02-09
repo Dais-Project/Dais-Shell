@@ -1,12 +1,14 @@
 import platform
 from typing import TypeAlias
 from .env_builder import EnvBuilder
-from .iostream_reader import IOStreamReaderResult
+from .iostream_reader import IOStreamReaderResult, IOStreamReaderStatus
 from .runtimes import BaseShellRuntime, BashRuntime, PowerShellRuntime
 from .types import CommandStep
+from .types.exceptions import ShellError, CommandNotFoundError, ShellRuntimeNotFoundError, ForbiddenShellTargetError
 from .constants import DEFAULT_COMMAND_BLACKLIST
 
 ShellResult: TypeAlias = IOStreamReaderResult
+ShellResultStatus: TypeAlias = IOStreamReaderStatus
 
 class AgentShell:
     def __init__(self,
@@ -47,4 +49,14 @@ class AgentShell:
                         .build())
         return await self._runtime.run(step, on_stdout, on_stderr)
 
-__all__ = ["AgentShell", "CommandStep", "ShellResult"]
+__all__ = [
+    "AgentShell",
+    "CommandStep",
+    "ShellResult",
+    "ShellResultStatus",
+
+    "ShellError",
+    "CommandNotFoundError",
+    "ShellRuntimeNotFoundError",
+    "ForbiddenShellTargetError",
+]
