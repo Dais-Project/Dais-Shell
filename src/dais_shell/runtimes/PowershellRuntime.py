@@ -3,12 +3,10 @@ import base64
 import os
 import json
 import shutil
-import subprocess
 from dataclasses import dataclass
 from .BaseShellRuntime import BaseShellRuntime
-from ..iostream_reader import IOStreamReaderResult, IOStreamReader, IOStreamReaderSync
-from ..types import CommandStep
-from ..types.exceptions import ShellRuntimeNotFoundError
+from ..iostream_reader import IOStreamReader, IOStreamReaderResult
+from ..types import CommandStep, ShellRuntimeNotFoundError
 
 CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 
@@ -81,19 +79,7 @@ class PowerShellRuntime(BaseShellRuntime):
         on_stdout=None,
         on_stderr=None,
     ) -> IOStreamReaderResult:
-        proc = subprocess.Popen(
-            self._prepare_cmd(step),
-            cwd=step.cwd,
-            env=step.env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-            creationflags=CREATE_NO_WINDOW
-        )
-
-        reader = IOStreamReaderSync(proc, on_stdout, on_stderr, self._max_lines)
-        return reader.read(step.timeout)
+        return asyncio.run(self.run(step, on_stdout, on_stderr))
 
     async def run(
         self,
