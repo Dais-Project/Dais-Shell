@@ -1,18 +1,14 @@
 [project]
 name = "dais-shell"
-version = "0.1.1"
+version = "0.1.2"
 description = "The shell tool for Dais."
 readme = "README.md"
-authors = [
-    { name = "BHznJNs", email = "441768875@qq.com" }
-]
+authors = [{ name = "BHznJNs", email = "441768875@qq.com" }]
 requires-python = ">=3.11"
 dependencies = []
 
 [dependency-groups]
-dev = [
-    "pytest",
-]
+dev = ["pytest"]
 
 [build-system]
 requires = ["uv_build>=0.9.28,<0.11.0"]
