@@ -25,15 +25,25 @@ class PowerShellCommandStep(CommandStep):
     def to_wrapper_script(self):
         cmd_json  = json.dumps(self.command)
         args_json = json.dumps(self.args)
+
+        if len(self.args) > 0:
+            args_line = f"$arguments = ,(ConvertFrom-Json '{args_json}')"
+            invoke_line = "& $command @arguments"
+        else:
+            # when no arguments, PowerShell ConvertFrom-Json will parse as null
+            # which will cause error for some commands.
+            args_line = ""
+            invoke_line = "& $command"
+
         script = f"""
 $ErrorActionPreference = "Stop"
 $PSNativeCommandArgumentPassing = "Standard"
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 
 $command  = ConvertFrom-Json '{cmd_json}'
-$arguments = ,(ConvertFrom-Json '{args_json}')
+{args_line}
 
-& $command @arguments
+{invoke_line}
 exit $LASTEXITCODE"""
         return script.strip()
 
