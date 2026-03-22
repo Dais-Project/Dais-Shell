@@ -15,7 +15,7 @@ def _build_step(command: str, args: list[str] | None = None) -> CommandStep:
     )
 
 
-def test_command_blacklist_blocks_target() -> None:
+def test_command_blacklist_blocks_target():
     shell = AgentShell(command_blacklist={"echo"})
 
     with pytest.raises(ForbiddenShellTargetError):
@@ -30,7 +30,7 @@ def test_command_blacklist_blocks_target() -> None:
         ("Darwin", "pwd"),
     ],
 )
-def test_shell_builtin_command_executes_successfully(system_name: str, builtin_command: str) -> None:
+def test_shell_builtin_command_executes_successfully(system_name: str, builtin_command: str):
     if platform.system() != system_name:
         pytest.skip(f"Current platform is {platform.system()}, not {system_name}")
 
@@ -41,8 +41,7 @@ def test_shell_builtin_command_executes_successfully(system_name: str, builtin_c
     assert result.error is None
     assert result.returncode == 0
 
-
-def test_nonexistent_command_returns_nonzero() -> None:
+def test_nonexistent_command_returns_nonzero():
     shell = AgentShell()
     result = shell.run_sync(_build_step("__dais_command_should_not_exist__"))
 

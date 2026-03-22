@@ -13,7 +13,7 @@ def _build_step() -> CommandStep:
     )
 
 
-def test_helloworld_sync() -> None:
+def test_helloworld_sync():
     shell = AgentShell()
     result = shell.run_sync(_build_step())
 
@@ -23,7 +23,7 @@ def test_helloworld_sync() -> None:
     assert result.returncode == 0
 
 
-def test_helloworld_async() -> None:
+def test_helloworld_async():
     shell = AgentShell()
 
     async def _run():
