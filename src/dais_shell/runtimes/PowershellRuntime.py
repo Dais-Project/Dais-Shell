@@ -1,16 +1,15 @@
 import asyncio
 import base64
-import os
 import json
 import shutil
 import re
 import xml.etree.ElementTree as ET
+import subprocess
 from dataclasses import dataclass
 from .BaseShellRuntime import BaseShellRuntime
 from ..iostream_reader import IOStreamReader, IOStreamReaderResult
 from ..types import CommandStep, ShellRuntimeNotFoundError
 
-CREATE_NO_WINDOW = 0x08000000 if os.name == "nt" else 0
 
 @dataclass
 class PowerShellCommandStep(CommandStep):
@@ -144,9 +143,10 @@ class PowerShellRuntime(BaseShellRuntime):
             *self._prepare_cmd(step),
             cwd=step.cwd,
             env=step.env,
+            stdin=asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            creationflags=CREATE_NO_WINDOW
+            creationflags=subprocess.CREATE_NO_WINDOW | subprocess.CREATE_NEW_PROCESS_GROUP
         )
 
         reader = IOStreamReader(proc, self._max_lines, on_stdout, on_stderr)

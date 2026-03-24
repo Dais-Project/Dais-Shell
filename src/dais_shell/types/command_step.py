@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from .exceptions import ForbiddenShellTargetError
 
+
 @dataclass
 class CommandStep:
     command: str

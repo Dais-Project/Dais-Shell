@@ -1,11 +1,10 @@
 import asyncio
-import subprocess
-import threading
-import time
+import psutil
 from enum import Enum
 from dataclasses import dataclass
 from collections import deque
-from typing import Callable, TextIO
+from typing import Callable
+
 
 IOStreamCallback = Callable[[str], None]
 IOStreamBuffer = deque[str]
@@ -55,6 +54,25 @@ class IOStreamReader:
             buf.append(text)
             if callback: callback(text)
 
+    @staticmethod
+    def _terminate_process_tree(proc: asyncio.subprocess.Process):
+        try:
+            parent = psutil.Process(proc.pid)
+            children = parent.children(recursive=True)
+
+            for child in children:
+                try:
+                    child.kill()
+                except psutil.NoSuchProcess:
+                    # child exited already
+                    pass
+            parent.kill()
+        except psutil.NoSuchProcess:pass
+        except Exception:pass
+        finally:
+            try: proc.kill()
+            except Exception: pass
+
     async def read(self, timeout_sec: int | None = None) -> IOStreamReaderResult:
         stdout_buf = IOStreamBuffer(maxlen=self._max_lines)
         stderr_buf = IOStreamBuffer(maxlen=self._max_lines)
@@ -74,15 +92,15 @@ class IOStreamReader:
             else:
                 returncode = await self._proc.wait()
         except asyncio.TimeoutError:
-            self._proc.kill()
+            self._terminate_process_tree(self._proc)
             returncode = await self._proc.wait()
             status = IOStreamReaderStatus.TIMEOUT
         except asyncio.CancelledError:
-            self._proc.kill()
+            self._terminate_process_tree(self._proc)
             returncode = await self._proc.wait()
             status = IOStreamReaderStatus.CANCELED
         except Exception as exc:
-            self._proc.kill()
+            self._terminate_process_tree(self._proc)
             returncode = await self._proc.wait()
             status = IOStreamReaderStatus.ERROR
             error = exc

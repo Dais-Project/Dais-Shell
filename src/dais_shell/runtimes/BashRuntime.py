@@ -5,6 +5,7 @@ from .BaseShellRuntime import BaseShellRuntime
 from ..types import CommandStep, ShellRuntimeNotFoundError
 from ..iostream_reader import IOStreamReader, IOStreamReaderResult
 
+
 @dataclass
 class BashCommandStep(CommandStep):
     @classmethod
@@ -69,8 +70,10 @@ class BashRuntime(BaseShellRuntime):
             *self._prepare_cmd(step),
             cwd=step.cwd,
             env=step.env,
+            stdin=asyncio.subprocess.DEVNULL,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            start_new_session=True,
         )
 
         reader = IOStreamReader(proc, self._max_lines, on_stdout, on_stderr)

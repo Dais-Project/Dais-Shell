@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from ..types import CommandStep
 from ..iostream_reader import IOStreamReaderResult
 
+
 class BaseShellRuntime(ABC):
     @abstractmethod
     def run_sync(self,

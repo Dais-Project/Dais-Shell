@@ -1,4 +1,6 @@
 import platform
+import sys
+import time
 
 import pytest
 
@@ -47,3 +49,38 @@ def test_nonexistent_command_returns_nonzero():
 
     assert result.status == ShellResultStatus.SUCCESS
     assert result.returncode != 0
+
+
+@pytest.mark.parametrize(
+    ("system_name", "command", "args"),
+    [
+        ("Windows", "ping", ["-n", "10", "127.0.0.1"]),
+        ("Linux", "sleep", ["10"]),
+        ("Darwin", "sleep", ["10"]),
+    ],
+)
+def test_command_timeout_interrupts_process(system_name: str, command: str, args: list[str]):
+    if platform.system() != system_name:
+        pytest.skip(f"Current platform is {platform.system()}, not {system_name}")
+
+    shell = AgentShell()
+    step = CommandStep(
+        command=command,
+        args=args,
+        env={},
+        cwd=".",
+        timeout=1,
+    )
+
+    start_time = time.monotonic()
+    result = shell.run_sync(step)
+    end_time = time.monotonic()
+
+    assert (end_time - start_time) < 2
+
+    assert result.status == ShellResultStatus.TIMEOUT
+    assert result.error is None
+    if sys.platform == "win32":
+        assert result.returncode != 0
+    else:
+        assert result.returncode == -9
