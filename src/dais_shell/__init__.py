@@ -13,13 +13,13 @@ ShellResultStatus: TypeAlias = IOStreamReaderStatus
 class AgentShell:
     def __init__(self,
                  command_blacklist: set[str] | None = None,
-                 env_extra: dict[str, str] | None = None,
+                 extra_env: dict[str, str] | None = None,
                  extra_paths: list[str] | None = None,
                  max_lines: int = 10000,
                  ):
         self._runtime = self._create_runtime(max_lines)
         self._command_blacklist = command_blacklist or DEFAULT_COMMAND_BLACKLIST
-        self._env_builder = EnvBuilder(blacklist=None, extra=env_extra, extra_paths=extra_paths)
+        self._env_builder = EnvBuilder(blacklist=None, extra=extra_env, extra_paths=extra_paths)
 
     @staticmethod
     def _create_runtime(max_lines: int) -> BaseShellRuntime:
