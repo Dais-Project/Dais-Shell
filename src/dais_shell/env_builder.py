@@ -76,29 +76,52 @@ elif platform.system() == "Darwin":
 else:
     ESSENTIAL_VARS |= UNIX_ESSENTIAL_VARS
 
+# Ensure all vars in ESSENTIAL_VARS uppercase
+ESSENTIAL_VARS = frozenset(v.upper() for v in ESSENTIAL_VARS)
+
 class EnvBuilder:
     def __init__(self,
                  blacklist: set[str] | None = None,
                  extra: dict[str, str] | None = None,
+                 extra_paths: list[str] | None = None,
                  ):
         self._blacklist = blacklist
-        self._extra = extra
+        self._extra = extra or {}
+        self._extra_paths = extra_paths or []
 
     def with_extra(self, extra: dict[str, str]) -> "EnvBuilder":
-        final_extra = (self._extra or {}).copy()
-        final_extra.update(extra)
-        return EnvBuilder(self._blacklist, final_extra)
+        return EnvBuilder(
+            blacklist=self._blacklist,
+            extra={**self._extra, **extra},
+            extra_paths=self._extra_paths,
+        )
+
+    def with_paths(self, paths: list[str]) -> "EnvBuilder":
+        return EnvBuilder(
+            blacklist=self._blacklist,
+            extra=self._extra,
+            extra_paths=self._extra_paths + paths,
+        )
 
     def build(self) -> dict[str, str]:
         base_env = os.environ.copy()
         final_env = {}
 
-        # insert essential vars
         for key, var in base_env.items():
+            # skip blacklisted vars
+            if self._blacklist and key.upper() in self._blacklist:
+                continue
+            # insert essential vars
             if key.upper() in ESSENTIAL_VARS:
                 final_env[key] = var
 
         # insert extra vars
-        if self._extra:
-            final_env.update(self._extra)
+        final_env.update(self._extra)
+
+        # insert extra paths
+        if len(self._extra_paths) > 0:
+            parts = self._extra_paths.copy()
+            existing = final_env.get("PATH", None)
+            if existing: parts.append(existing)
+            final_env["PATH"] = os.pathsep.join(parts)
         return final_env
