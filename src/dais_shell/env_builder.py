@@ -79,6 +79,14 @@ else:
 # Ensure all vars in ESSENTIAL_VARS uppercase
 ESSENTIAL_VARS = frozenset(v.upper() for v in ESSENTIAL_VARS)
 
+
+CONSTANT_VARS = {
+    "PYTHONUTF8": "1",
+    "PYTHONIOENCODING": "utf-8",
+    "JAVA_TOOL_OPTIONS": "-Dfile.encoding=UTF-8",
+    "RUBYOPT": "-EUTF-8",
+}
+
 class EnvBuilder:
     def __init__(self,
                  blacklist: set[str] | None = None,
@@ -105,7 +113,7 @@ class EnvBuilder:
 
     def build(self) -> dict[str, str]:
         base_env = os.environ.copy()
-        final_env = {}
+        final_env = CONSTANT_VARS.copy()
 
         for key, var in base_env.items():
             # skip blacklisted vars

@@ -2,7 +2,7 @@ import os
 import platform
 
 import dais_shell.env_builder as env_builder_module
-from dais_shell.env_builder import ESSENTIAL_VARS, EnvBuilder
+from dais_shell.env_builder import ESSENTIAL_VARS, CONSTANT_VARS, EnvBuilder
 
 
 def _patch_environ(monkeypatch, env: dict[str, str]):
@@ -16,8 +16,8 @@ def test_with_extra_returns_new_builder_and_overrides_keys(monkeypatch):
     new_builder = builder.with_extra({"B": "2", "C": "3"})
 
     assert new_builder is not builder
-    assert builder.build() == {"A": "1", "B": "1"}
-    assert new_builder.build() == {"A": "1", "B": "2", "C": "3"}
+    assert builder.build() == {**CONSTANT_VARS, "A": "1", "B": "1"}
+    assert new_builder.build() == {**CONSTANT_VARS, "A": "1", "B": "2", "C": "3"}
 
 
 def test_with_paths_returns_new_builder_and_appends_paths_in_order(monkeypatch):

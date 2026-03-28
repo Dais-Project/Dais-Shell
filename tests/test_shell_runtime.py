@@ -43,6 +43,7 @@ def test_shell_builtin_command_executes_successfully(system_name: str, builtin_c
     assert result.error is None
     assert result.returncode == 0
 
+
 def test_nonexistent_command_returns_nonzero():
     shell = AgentShell()
     result = shell.run_sync(_build_step("__dais_command_should_not_exist__"))
@@ -97,3 +98,27 @@ def test_command_timeout_interrupts_process(system_name: str, command: str, args
         assert result.returncode != 0
     else:
         assert result.returncode == -9
+
+
+class TestOutputEncoding:
+    UNICODE_SAMPLES = [
+        "你好世界",
+        "日本語テスト",
+        "한국어 테스트",
+        "Ünïcödé",
+        "emoji: 🎉🔥",
+    ]
+
+    @pytest.mark.parametrize("text", UNICODE_SAMPLES)
+    def test_python_output_encoding(self, text):
+         shell = AgentShell()
+         step = _build_step("python", ["-c", f"print('{text}')"])
+         result = shell.run_sync(step)
+         assert result.stdout == text
+
+    @pytest.mark.parametrize("text", UNICODE_SAMPLES)
+    def test_node_output_encoding(self, text):
+         shell = AgentShell()
+         step = _build_step("node", ["-e", f"console.log('{text}')"])
+         result = shell.run_sync(step)
+         assert result.stdout == text
