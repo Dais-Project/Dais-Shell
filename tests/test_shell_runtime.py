@@ -51,6 +51,19 @@ def test_nonexistent_command_returns_nonzero():
     assert result.returncode != 0
 
 
+def test_multiline_output():
+    shell = AgentShell()
+    result = shell.run_sync(_build_step("python", ["-c", "for i in range(5): print(i * 10)"]))
+
+    assert list(result.stdout_buf) == [
+        "0",
+        "10",
+        "20",
+        "30",
+        "40",
+    ]
+
+
 @pytest.mark.parametrize(
     ("system_name", "command", "args"),
     [

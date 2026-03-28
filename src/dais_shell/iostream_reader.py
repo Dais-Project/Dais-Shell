@@ -50,7 +50,7 @@ class IOStreamReader:
         while not stream.at_eof():
             line = await stream.readline()
             if not line: break
-            text = line.decode("utf-8", errors="replace")
+            text = line.decode("utf-8", errors="replace").rstrip("\r\n")
             buf.append(text)
             if callback: callback(text)
 

@@ -1,6 +1,6 @@
 [project]
 name = "dais-shell"
-version = "0.1.6"
+version = "0.1.7"
 description = "The shell tool for Dais."
 readme = "README.md"
 authors = [{ name = "BHznJNs", email = "441768875@qq.com" }]
