@@ -100,6 +100,24 @@ def test_command_timeout_interrupts_process(system_name: str, command: str, args
         assert result.returncode == -9
 
 
+class TestEnvVariables:
+    def test_agent_shell_extra_env_passed_to_command(self):
+        expected_value = "extra_env_value"
+        shell = AgentShell(extra_env={"EXTRA_VAR": expected_value})
+
+        step = CommandStep(
+            command="echo",
+            args=["$EXTRA_VAR"],
+            cwd=".",
+            env={},
+        )
+        result = shell.run_sync(step)
+
+        assert result.status == ShellResultStatus.SUCCESS
+        assert result.returncode == 0
+        assert result.stdout == expected_value
+
+
 class TestOutputEncoding:
     UNICODE_SAMPLES = [
         "你好世界",

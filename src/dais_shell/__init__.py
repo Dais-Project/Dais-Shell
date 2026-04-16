@@ -1,5 +1,6 @@
 import asyncio
 import platform
+from dataclasses import replace
 from typing import TypeAlias
 from .env_builder import EnvBuilder
 from .iostream_reader import IOStreamReaderResult, IOStreamReaderStatus
@@ -40,6 +41,7 @@ class AgentShell:
                   on_stdout=None,
                   on_stderr=None
                   ) -> ShellResult:
+        step = replace(step)
         step.validate_forbidden(self._command_blacklist)
         step.env = (self._env_builder
                         .with_extra(step.env or {})

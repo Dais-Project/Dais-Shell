@@ -1,6 +1,8 @@
 import asyncio
 import shutil
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+
+from dais_shell.utils.env_expander import EnvExpander
 from .BaseShellRuntime import BaseShellRuntime
 from ..types import CommandStep, ShellRuntimeNotFoundError
 from ..iostream_reader import IOStreamReader, IOStreamReaderResult
@@ -10,13 +12,7 @@ from ..iostream_reader import IOStreamReader, IOStreamReaderResult
 class BashCommandStep(CommandStep):
     @classmethod
     def from_command_step(cls, step: CommandStep):
-        return cls(
-            command=step.command,
-            args=step.args,
-            env=step.env,
-            cwd=step.cwd,
-            timeout=step.timeout
-        )
+        return cls(**asdict(step))
 
     def to_wrapper_script(self):
         return 'exec "$1" "${@:2}"'
@@ -46,6 +42,8 @@ class BashRuntime(BaseShellRuntime):
         ]
 
     def _prepare_cmd(self, step: CommandStep) -> list[str]:
+        env_expander = EnvExpander(step.env or {})
+        step.args = [env_expander.expand(arg) for arg in step.args]
         step = BashCommandStep.from_command_step(step)
         resolved = shutil.which(step.command)
         is_shell_command = resolved is None

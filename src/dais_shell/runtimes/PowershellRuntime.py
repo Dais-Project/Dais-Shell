@@ -5,7 +5,9 @@ import shutil
 import re
 import xml.etree.ElementTree as ET
 import subprocess
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+
+from dais_shell.utils.env_expander import EnvExpander
 from .BaseShellRuntime import BaseShellRuntime
 from ..iostream_reader import IOStreamReader, IOStreamReaderResult
 from ..types import CommandStep, ShellRuntimeNotFoundError
@@ -15,13 +17,7 @@ from ..types import CommandStep, ShellRuntimeNotFoundError
 class PowerShellCommandStep(CommandStep):
     @classmethod
     def from_command_step(cls, step: CommandStep):
-        return cls(
-            command=step.command,
-            args=step.args,
-            env=step.env,
-            cwd=step.cwd,
-            timeout=step.timeout
-        )
+        return cls(**asdict(step))
 
     def to_wrapper_script(self):
         def ps_encode(s: str) -> str:
@@ -124,6 +120,8 @@ class PowerShellRuntime(BaseShellRuntime):
         ]
 
     def _prepare_cmd(self, step: CommandStep) -> list[str]:
+        env_expander = EnvExpander(step.env or {})
+        step.args = [env_expander.expand(arg) for arg in step.args]
         step = PowerShellCommandStep.from_command_step(step)
         script = step.to_wrapper_script()
         encoded = self._encode(script)
