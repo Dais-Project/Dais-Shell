@@ -20,25 +20,18 @@ class PowerShellCommandStep(CommandStep):
         return cls(**asdict(step))
 
     def to_wrapper_script(self):
+
+        def ps_quote(s: str) -> str:
+            return "'" + s.replace("'", "''") + "'"
+
+        def fmt_arg(s: str) -> str:
+            return s if re.match(r"^-[a-zA-Z]", s) else ps_quote(s)
+
         def ps_encode(s: str) -> str:
             return base64.b64encode(s.encode("utf-8")).decode("ascii")
 
-        cmd_json  = json.dumps(self.command)
-        args_json = json.dumps(self.args)
-
-        if len(self.args) > 0:
-            # encode to base64 and decode in script to prevent single quotes in the args
-            args_b64 = ps_encode(args_json)
-            args_line = f"""\
-            $args_json = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String('{args_b64}'))
-            $arguments = ,(ConvertFrom-Json $args_json)
-            """
-            invoke_line = "& $command @arguments"
-        else:
-            # when no arguments, PowerShell ConvertFrom-Json will parse as null
-            # which will cause error for some commands.
-            args_line = ""
-            invoke_line = "& $command"
+        args_str = (" " + " ".join(fmt_arg(a) for a in self.args)) if self.args else ""
+        invocation = f"& {ps_quote(self.command)}{args_str}"
 
         script = f"""
 $ErrorActionPreference = "Stop"
@@ -49,10 +42,7 @@ $OutputEncoding           = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::InputEncoding  = [System.Text.Encoding]::UTF8
 
-$command  = ConvertFrom-Json '{cmd_json}'
-{args_line}
-
-{invoke_line}
+{invocation}
 exit $LASTEXITCODE"""
         return script.strip()
 
