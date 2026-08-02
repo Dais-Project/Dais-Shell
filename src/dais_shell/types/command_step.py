@@ -8,7 +8,7 @@ from .exceptions import ForbiddenShellTargetError
 @dataclass
 class CommandStep:
     command: str
-    args: list[str]
+    args: str
     cwd: str | Path
     env: dict[str, str] | None = None
     timeout: int | None = None

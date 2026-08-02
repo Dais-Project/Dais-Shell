@@ -6,7 +6,7 @@ from dais_shell import AgentShell, CommandStep
 def _build_step() -> CommandStep:
     return CommandStep(
         command="echo",
-        args=["Hello World"],
+        args="'Hello World'",
         env={},
         cwd=".",
         timeout=None,

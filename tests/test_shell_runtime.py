@@ -7,10 +7,10 @@ import pytest
 from dais_shell import AgentShell, CommandStep, ForbiddenShellTargetError, ShellResultStatus
 
 
-def _build_step(command: str, args: list[str] | None = None) -> CommandStep:
+def _build_step(command: str, args: str | None = None) -> CommandStep:
     return CommandStep(
         command=command,
-        args=args or [],
+        args=args or "",
         env={},
         cwd=".",
         timeout=None,
@@ -21,7 +21,7 @@ def test_command_blacklist_blocks_target():
     shell = AgentShell(command_blacklist={"echo"})
 
     with pytest.raises(ForbiddenShellTargetError):
-        shell.run_sync(_build_step("echo", ["blocked"]))
+        shell.run_sync(_build_step("echo", "blocked"))
 
 
 @pytest.mark.parametrize(
@@ -54,7 +54,7 @@ def test_nonexistent_command_returns_nonzero():
 
 def test_multiline_output():
     shell = AgentShell()
-    result = shell.run_sync(_build_step("python", ["-c", "for i in range(5): print(i * 10)"]))
+    result = shell.run_sync(_build_step("python", '-c "for i in range(5): print(i * 10)"'))
 
     assert list(result.stdout_buf) == [
         "0",
@@ -68,12 +68,12 @@ def test_multiline_output():
 @pytest.mark.parametrize(
     ("system_name", "command", "args"),
     [
-        ("Windows", "ping", ["-n", "10", "127.0.0.1"]),
-        ("Linux", "sleep", ["10"]),
-        ("Darwin", "sleep", ["10"]),
+        ("Windows", "ping", "-n 10 127.0.0.1"),
+        ("Linux", "sleep", "10"),
+        ("Darwin", "sleep", "10"),
     ],
 )
-def test_command_timeout_interrupts_process(system_name: str, command: str, args: list[str]):
+def test_command_timeout_interrupts_process(system_name: str, command: str, args: str):
     if platform.system() != system_name:
         pytest.skip(f"Current platform is {platform.system()}, not {system_name}")
 
@@ -107,7 +107,7 @@ class TestEnvVariables:
 
         step = CommandStep(
             command="echo",
-            args=["$EXTRA_VAR"],
+            args="$EXTRA_VAR",
             cwd=".",
             env={},
         )
@@ -129,14 +129,14 @@ class TestOutputEncoding:
 
     @pytest.mark.parametrize("text", UNICODE_SAMPLES)
     def test_python_output_encoding(self, text):
-         shell = AgentShell()
-         step = _build_step("python", ["-c", f"print('{text}')"])
-         result = shell.run_sync(step)
-         assert result.stdout == text
+        shell = AgentShell()
+        step = _build_step("python", f'-c "print(\'{text}\')"')
+        result = shell.run_sync(step)
+        assert result.stdout == text
 
     @pytest.mark.parametrize("text", UNICODE_SAMPLES)
     def test_node_output_encoding(self, text):
-         shell = AgentShell()
-         step = _build_step("node", ["-e", f"console.log('{text}')"])
-         result = shell.run_sync(step)
-         assert result.stdout == text
+        shell = AgentShell()
+        step = _build_step("node", f'-e "console.log(\'{text}\')"')
+        result = shell.run_sync(step)
+        assert result.stdout == text

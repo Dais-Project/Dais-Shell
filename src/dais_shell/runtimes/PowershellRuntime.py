@@ -20,18 +20,8 @@ class PowerShellCommandStep(CommandStep):
         return cls(**asdict(step))
 
     def to_wrapper_script(self):
-
         def ps_quote(s: str) -> str:
             return "'" + s.replace("'", "''") + "'"
-
-        def fmt_arg(s: str) -> str:
-            return s if re.match(r"^-[a-zA-Z]", s) else ps_quote(s)
-
-        def ps_encode(s: str) -> str:
-            return base64.b64encode(s.encode("utf-8")).decode("ascii")
-
-        args_str = (" " + " ".join(fmt_arg(a) for a in self.args)) if self.args else ""
-        invocation = f"& {ps_quote(self.command)}{args_str}"
 
         script = f"""
 $ErrorActionPreference = "Stop"
@@ -42,7 +32,10 @@ $OutputEncoding           = [System.Text.Encoding]::UTF8
 [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
 [Console]::InputEncoding  = [System.Text.Encoding]::UTF8
 
-{invocation}
+$command = {ps_quote(self.command)}
+
+& $command {self.args}
+
 exit $LASTEXITCODE"""
         return script.strip()
 
@@ -111,7 +104,7 @@ class PowerShellRuntime(BaseShellRuntime):
 
     def _prepare_cmd(self, step: CommandStep) -> list[str]:
         env_expander = EnvExpander(step.env or {})
-        step.args = [env_expander.expand(arg) for arg in step.args]
+        step.args = env_expander.expand(step.args)
         step = PowerShellCommandStep.from_command_step(step)
         script = step.to_wrapper_script()
         encoded = self._encode(script)
