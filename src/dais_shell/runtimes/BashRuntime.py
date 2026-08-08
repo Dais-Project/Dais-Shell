@@ -5,7 +5,9 @@ from dataclasses import asdict, dataclass
 
 from dais_shell.utils.env_expander import EnvExpander
 from .BaseShellRuntime import BaseShellRuntime
-from ..types import CommandStep, ShellRuntimeNotFoundError
+from ..types.command_step import CommandStep
+from ..types.shell_script import ShellScript
+from ..types.exceptions import ShellRuntimeNotFoundError
 from ..iostream_reader import IOStreamReader, IOStreamReaderResult
 
 
@@ -39,21 +41,24 @@ class BashRuntime(BaseShellRuntime):
             step.to_wrapper_script(),
         ]
 
-    def _prepare_cmd(self, step: CommandStep) -> list[str]:
+    def _prepare_cmd(self, step: CommandStep | ShellScript) -> list[str]:
+        if isinstance(step, ShellScript):
+            return [self._shell, "-c", step.script]
+
         env_expander = EnvExpander(step.env or {})
         step.args = env_expander.expand(step.args)
         step = BashCommandStep.from_command_step(step)
         return self._make_bash_commands(step)
 
     def run_sync(self,
-                 step: CommandStep,
+                 step: CommandStep | ShellScript,
                  on_stdout=None,
                  on_stderr=None,
                 ) -> IOStreamReaderResult:
         return asyncio.run(self.run(step, on_stdout, on_stderr))
 
     async def run(self,
-                        step: CommandStep,
+                        step: CommandStep | ShellScript,
                         on_stdout=None,
                         on_stderr=None
                         ) -> IOStreamReaderResult:

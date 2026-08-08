@@ -5,12 +5,49 @@ import shutil
 import re
 import xml.etree.ElementTree as ET
 import subprocess
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 
 from dais_shell.utils.env_expander import EnvExpander
 from .BaseShellRuntime import BaseShellRuntime
 from ..iostream_reader import IOStreamReader, IOStreamReaderResult
-from ..types import CommandStep, ShellRuntimeNotFoundError
+from ..types.command_step import CommandStep
+from ..types.shell_script import ShellScript
+from ..types.exceptions import ShellRuntimeNotFoundError
+
+
+@dataclass
+class PowerShellScript(ShellScript):
+    @classmethod
+    def from_shell_script(cls, script: ShellScript):
+        data = asdict(script)
+        return cls(**{
+            field.name: data[field.name]
+            for field in fields(ShellScript)
+        })
+
+    def to_wrapper_script(self):
+        return f"""
+$ErrorActionPreference = "Stop"
+$PSNativeCommandArgumentPassing = "Standard"
+
+chcp 65001 | Out-Null
+$OutputEncoding           = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding  = [System.Text.Encoding]::UTF8
+
+$LASTEXITCODE = $null
+
+& {{
+{self.script}
+
+$daisSuccess = $?
+$daisExitCode = $LASTEXITCODE
+
+if ($daisSuccess) {{ exit 0 }}
+if ($daisExitCode -ne $null) {{ exit $daisExitCode }}
+exit 1
+}}
+""".strip()
 
 
 @dataclass
@@ -102,7 +139,13 @@ class PowerShellRuntime(BaseShellRuntime):
             "-EncodedCommand", encoded
         ]
 
-    def _prepare_cmd(self, step: CommandStep) -> list[str]:
+    def _prepare_cmd(self, step: CommandStep | ShellScript) -> list[str]:
+        if isinstance(step, ShellScript):
+            script = PowerShellScript.from_shell_script(step)
+            return self._make_powershell_commands(
+                self._encode(script.to_wrapper_script())
+            )
+
         env_expander = EnvExpander(step.env or {})
         step.args = env_expander.expand(step.args)
         step = PowerShellCommandStep.from_command_step(step)
@@ -112,7 +155,7 @@ class PowerShellRuntime(BaseShellRuntime):
 
     def run_sync(
         self,
-        step: CommandStep,
+        step: CommandStep | ShellScript,
         on_stdout=None,
         on_stderr=None,
     ) -> IOStreamReaderResult:
@@ -120,7 +163,7 @@ class PowerShellRuntime(BaseShellRuntime):
 
     async def run(
         self,
-        step: CommandStep,
+        step: CommandStep | ShellScript,
         on_stdout=None,
         on_stderr=None
     ) -> IOStreamReaderResult:

@@ -5,7 +5,9 @@ from typing import TypeAlias
 from .env_builder import EnvBuilder
 from .iostream_reader import IOStreamReaderResult, IOStreamReaderStatus
 from .runtimes import BaseShellRuntime, BashRuntime, PowerShellRuntime
-from .types import CommandStep, ShellError, ShellRuntimeNotFoundError, ForbiddenShellTargetError
+from .types.command_step import CommandStep
+from .types.shell_script import ShellScript
+from .types.exceptions import ShellError, ShellRuntimeNotFoundError, ForbiddenShellTargetError
 from .constants import DEFAULT_COMMAND_BLACKLIST
 
 ShellResult: TypeAlias = IOStreamReaderResult
@@ -30,19 +32,20 @@ class AgentShell:
             return BashRuntime(max_lines)
 
     def run_sync(self,
-                 step: CommandStep,
+                 step: CommandStep | ShellScript,
                  on_stdout=None,
                  on_stderr=None
                  ) -> ShellResult:
         return asyncio.run(self.run(step, on_stdout, on_stderr))
 
     async def run(self,
-                  step: CommandStep,
+                  step: CommandStep | ShellScript,
                   on_stdout=None,
                   on_stderr=None
                   ) -> ShellResult:
         step = replace(step)
-        step.validate_forbidden(self._command_blacklist)
+        if isinstance(step, CommandStep):
+            step.validate_forbidden(self._command_blacklist)
         step.env = (self._env_builder
                         .with_extra(step.env or {})
                         .build())
@@ -51,6 +54,7 @@ class AgentShell:
 __all__ = [
     "AgentShell",
     "CommandStep",
+    "ShellScript",
     "ShellResult",
     "ShellResultStatus",
 

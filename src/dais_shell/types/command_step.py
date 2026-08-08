@@ -22,6 +22,7 @@ class CommandStep:
             if name in filter:
                 raise ForbiddenShellTargetError(name)
 
+
 __all__ = [
     "CommandStep",
 ]

@@ -2,10 +2,12 @@ import os
 import platform
 import time
 import tempfile
+from dataclasses import dataclass
 
 import pytest
 
-from dais_shell import AgentShell, CommandStep, ShellResultStatus
+from dais_shell import AgentShell, CommandStep, ShellResultStatus, ShellScript
+from dais_shell.runtimes.PowershellRuntime import PowerShellScript
 
 
 def _build_step(command: str, args: str | None = None) -> CommandStep:
@@ -16,6 +18,47 @@ def _build_step(command: str, args: str | None = None) -> CommandStep:
         cwd=".",
         timeout=None,
     )
+
+def test_powershell_script_wraps_shell_script():
+    step = ShellScript(
+        script="Write-Output 'hello'",
+        cwd=".",
+        env={"EXAMPLE": "value"},
+        timeout=3,
+    )
+
+    powershell_script = PowerShellScript.from_shell_script(step)
+    wrapper = powershell_script.to_wrapper_script()
+
+    assert powershell_script.script == step.script
+    assert powershell_script.cwd == step.cwd
+    assert powershell_script.env == step.env
+    assert powershell_script.timeout == step.timeout
+    assert '$ErrorActionPreference = "Stop"' in wrapper
+    assert "$LASTEXITCODE = $null" in wrapper
+    assert step.script in wrapper
+    assert "$daisSuccess = $?" in wrapper
+
+
+def test_powershell_script_accepts_shell_script_subclass():
+    @dataclass
+    class ExtendedShellScript(ShellScript):
+        label: str = "example"
+
+    step = ExtendedShellScript(
+        script="Write-Output 'hello'",
+        cwd=".",
+        env={"EXAMPLE": "value"},
+        timeout=3,
+    )
+
+    powershell_script = PowerShellScript.from_shell_script(step)
+
+    assert powershell_script.script == step.script
+    assert powershell_script.cwd == step.cwd
+    assert powershell_script.env == step.env
+    assert powershell_script.timeout == step.timeout
+
 
 def test_powershell_stderr_clixml_stripped():
     if platform.system() != "Windows":
