@@ -1,6 +1,5 @@
 import asyncio
 import base64
-import json
 import shutil
 import re
 import xml.etree.ElementTree as ET
@@ -15,6 +14,17 @@ from ..types.shell_script import ShellScript
 from ..types.exceptions import ShellRuntimeNotFoundError
 
 
+POWERSHELL_PREFERENCES = """
+$ErrorActionPreference = "Stop"
+$WarningPreference = "SilentlyContinue"
+$VerbosePreference = "SilentlyContinue"
+$DebugPreference = "SilentlyContinue"
+$InformationPreference = "SilentlyContinue"
+$ProgressPreference = "SilentlyContinue"
+
+$PSNativeCommandArgumentPassing = "Standard"
+""".strip()
+
 @dataclass
 class PowerShellScript(ShellScript):
     @classmethod
@@ -27,8 +37,7 @@ class PowerShellScript(ShellScript):
 
     def to_wrapper_script(self):
         return f"""
-$ErrorActionPreference = "Stop"
-$PSNativeCommandArgumentPassing = "Standard"
+{POWERSHELL_PREFERENCES}
 
 chcp 65001 | Out-Null
 $OutputEncoding           = [System.Text.Encoding]::UTF8
@@ -61,8 +70,7 @@ class PowerShellCommandStep(CommandStep):
             return "'" + s.replace("'", "''") + "'"
 
         script = f"""
-$ErrorActionPreference = "Stop"
-$PSNativeCommandArgumentPassing = "Standard"
+{POWERSHELL_PREFERENCES}
 
 chcp 65001 | Out-Null
 $OutputEncoding           = [System.Text.Encoding]::UTF8
