@@ -140,3 +140,31 @@ class TestOutputEncoding:
         step = _build_step("node", f'-e "console.log(\'{text}\')"')
         result = shell.run_sync(step)
         assert result.stdout == text
+
+    def test_non_utf8_stdout_is_normalized(self):
+        expected = "这是一段用于验证标准输出编码自动识别与转换功能的中文测试内容"
+        lines = []
+        shell = AgentShell()
+        step = _build_step(
+            "python",
+            f'-c "import sys; sys.stdout.buffer.write({expected.encode("gb18030")!r} + b\'\\n\')"',
+        )
+
+        result = shell.run_sync(step, on_stdout=lines.append)
+
+        assert result.stdout == expected
+        assert lines == [expected]
+
+    def test_non_utf8_stderr_is_normalized(self):
+        expected = "这是一段用于验证标准错误编码自动识别与转换功能的中文测试内容"
+        lines = []
+        shell = AgentShell()
+        step = _build_step(
+            "python",
+            f'-c "import sys; sys.stderr.buffer.write({expected.encode("gb18030")!r} + b\'\\n\')"',
+        )
+
+        result = shell.run_sync(step, on_stderr=lines.append)
+
+        assert result.stderr == expected
+        assert lines == [expected]

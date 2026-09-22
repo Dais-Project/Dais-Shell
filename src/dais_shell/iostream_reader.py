@@ -4,6 +4,7 @@ from enum import Enum
 from dataclasses import dataclass
 from collections import deque
 from typing import Callable
+from charset_normalizer import from_bytes
 
 
 IOStreamCallback = Callable[[str], None]
@@ -46,11 +47,21 @@ class IOStreamReader:
         self._on_stderr = on_stderr
 
     @staticmethod
+    def _decode(data: bytes) -> str:
+        try:
+            return data.decode("utf-8")
+        except UnicodeDecodeError:
+            result = from_bytes(data).best()
+            if result is None:
+                return data.decode("utf-8", errors="replace")
+            return result.output().decode("utf-8")
+
+    @staticmethod
     async def _consumer(stream: asyncio.StreamReader, callback: IOStreamCallback | None, buf: IOStreamBuffer):
         while not stream.at_eof():
             line = await stream.readline()
             if not line: break
-            text = line.decode("utf-8", errors="replace").rstrip("\r\n")
+            text = IOStreamReader._decode(line).rstrip("\r\n")
             buf.append(text)
             if callback: callback(text)
 

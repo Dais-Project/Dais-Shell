@@ -1,11 +1,14 @@
 [project]
 name = "dais-shell"
-version = "0.3.1"
+version = "0.3.2"
 description = "The shell tool for Dais."
 readme = "README.md"
 authors = [{ name = "BHznJNs", email = "441768875@qq.com" }]
 requires-python = ">=3.11"
-dependencies = ["psutil>=7.2.2"]
+dependencies = [
+    "charset-normalizer>=3.5.1",
+    "psutil>=7.2.2",
+]
 
 [dependency-groups]
 dev = ["pytest"]
